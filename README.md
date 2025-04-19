@@ -3,7 +3,7 @@
 A Home Assistant custom Integration for local handling of Tuya-based devices.
 
 This custom integration updates device status via pushing updates instead of polling, so status updates are fast (even when manually operated).
-The integration also supports the Tuya IoT Cloud APIs, for the retrieval of info and of the local_keys of the devices. 
+The integration supports various Tuya Cloud APIs (Tuya IoT Platform, Tuya OEM Ledvance and generic Tuya OEM) for the retrieval of info and of the local_keys of the devices.
 
 
 **NOTE: The Cloud API account configuration is not mandatory (LocalTuya can work also without it) but is strongly suggested for easy retrieval (and auto-update after re-pairing a device) of local_keys. Cloud API calls are performed only at startup, and when a local_key update is needed.**
@@ -46,13 +46,24 @@ For manual installation, copy the localtuya folder and all of its contents into 
 
 
 To start configuring the integration, just press the "+ADD INTEGRATION" button in the Settings - Integrations page, and select LocalTuya from the drop-down menu.
-The Cloud API configuration page will appear, requesting to input your Tuya IoT Platform account credentials:
+
+## Cloud API type selection
+
+The Cloud API type selection page will appear, prompting you to choose the type of cloud connection to use.
+
+> **Note: if you don't want to use a cloud connection simply choose "Do not configure a Cloud API account", and the Integration will be added anyway.**
 
 ![cloud_setup](https://github.com/rospogrigio/localtuya-homeassistant/blob/master/img/9-cloud_setup.png)
 
+### Tuya IoT Platform
+
+This cloud connection type uses the official Tuya IoT Platform API. Input your Tuya IoT Platform account credentials:
+
+![cloud_iot](https://github.com/rospogrigio/localtuya-homeassistant/blob/master/img/12-cloud_out.png)
+
 To setup a Tuya IoT Platform account and setup a project in it, refer to the instructions for the official Tuya integration:
 https://www.home-assistant.io/integrations/tuya/
-The place to find the Client ID and Secret is described in this link (in the ["Get Authorization Key"](https://www.home-assistant.io/integrations/tuya/#get-authorization-key) paragraph), while the User ID can be found in the "Link Tuya App Account" subtab within the Cloud project:
+The Client ID and Secret can be found at `Cloud > Development > Overview` and the User ID can be found in the "Link Tuya App Account" subtab within the Cloud project:
 
 ![user_id.png](https://github.com/rospogrigio/localtuya-homeassistant/blob/master/img/8-user_id.png)
 
@@ -62,7 +73,19 @@ The place to find the Client ID and Secret is described in this link (in the ["G
 
 After pressing the Submit button, the first setup is complete and the Integration will be added. 
 
-> **Note: it is not mandatory to input the Cloud API credentials: you can choose to tick the "Do not configure a Cloud API account" button, and the Integration will be added anyway.**
+### Tuya OEM Ledvance
+
+This cloud connection type uses a non-public Tuya OEM API that allows you to obtain the local keys by using your Ledvance app account. The integration mimics a Tuya mobile app, so you may get a notification about login from another device.
+
+![cloud_oem_ledvance.png](https://github.com/rospogrigio/localtuya-homeassistant/blob/master/img/13-cloud_oem_ledvance.png)
+
+### Tuya OEM generic
+
+This cloud connection type uses a non-public Tuya OEM API that allows you to obtain the local keys by using your generic Tuya-based app account. The integration mimics a Tuya mobile app, so you may get a notification about login from another device.
+
+Unlike the Ledvance variant, you also need to provide the client ID and secret that are embedded in your mobile app. There are guides online on how you can extract them.
+
+![cloud_oem_generic.png](https://github.com/rospogrigio/localtuya-homeassistant/blob/master/img/14-cloud_oem_generic.png)
 
 After the Integration has been set up, devices can be added and configured pressing the Configure button in the Integrations page:
 
@@ -155,6 +178,32 @@ You can obtain Energy monitoring (voltage, current) in two different ways:
                unit_of_measurement: 'W'
 ```
 
+# Climates
+
+There are a multitude of Tuya based climates out there, both heaters,
+thermostats and ACs. The all seems to be integrated in different ways and it's
+hard to find a common DP mapping. Below are a table of DP to product mapping
+which are currently seen working. Use it as a guide for your own mapping and
+please contribute to the list if you have the possibility.
+
+| DP  | Moes BHT 002                                            | Qlima WMS S + SC52 (AB;AF)                              | Avatto                                     |
+|-----|---------------------------------------------------------|---------------------------------------------------------|--------------------------------------------|
+| 1   | ID: On/Off<br>{true, false}                             | ID: On/Off<br>{true, false}                             | ID: On/Off<br>{true, false}                |
+| 2   | Target temperature<br>Integer, scaling: 0.5             | Target temperature<br>Integer, scaling 1                | Target temperature<br>Integer, scaling 1   |
+| 3   | Current temperature<br>Integer, scaling: 0.5            | Current temperature<br>Integer, scaling: 1              | Current temperature<br>Integer, scaling: 1 |
+| 4   | Mode<br>{0, 1}                                          | Mode<br>{"hot", "wind", "wet", "cold", "auto"}          | ?                                          |
+| 5   | Eco mode<br>?                                           | Fan mode<br>{"strong", "high", "middle", "low", "auto"} | ?                                          |
+| 15  | Not supported                                           | Supported, unknown<br>{true, false}                     | ?                                          |
+| 19  | Not supported                                           | Temperature unit<br>{"c", "f"}                          | ?                                          |
+| 23  | Not supported                                           | Supported, unknown<br>Integer, eg. 68                   | ?                                          |
+| 24  | Not supported                                           | Supported, unknown<br>Integer, eg. 64                   | ?                                          |
+| 101 | Not supported                                           | Outdoor temperature<br>Integer. Scaling: 1              | ?                                          |
+| 102 | Temperature of external sensor<br>Integer, scaling: 0.5 | Supported, unknown<br>Integer, eg. 34                   | ?                                          |
+| 104 | Supported, unknown<br>{true, false(?)}                  | Not supported                                           | ?                                          |
+
+[Moes BHT 002](https://community.home-assistant.io/t/moes-bht-002-thermostat-local-control-tuya-based/151953/47)
+[Avatto thermostat](https://pl.aliexpress.com/item/1005001605377377.html?gatewayAdapt=glo2pol)
+
 # Debugging
 
 Whenever you write a bug report, it helps tremendously if you include debug logs directly (otherwise we will just ask for them and it will take longer). So please enable debug logs like this and include them in your issue:
@@ -176,7 +225,7 @@ Then, edit the device that is showing problems and check the "Enable debugging f
 # To-do list:
 
 * Create a (good and precise) sensor (counter) for Energy (kWh) -not just Power, but based on it-.
-      Ideas: Use: https://www.home-assistant.io/integrations/integration/ and https://www.home-assistant.io/integrations/utility_meter/
+      Ideas: Use: https://www.home-assistant.io/components/integration/ and https://www.home-assistant.io/components/utility_meter/
 
 * Everything listed in https://github.com/rospogrigio/localtuya-homeassistant/issues/15
 
